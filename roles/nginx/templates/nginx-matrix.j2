@@ -41,8 +41,8 @@ server {
         proxy_pass http://localhost:8008;
     }
 
-    location /admin {
-        proxy_pass http://localhost:3000;
+    location /admin/ {
+        alias {{ synapse_admin_dir }}/build/;
     }
 }
 

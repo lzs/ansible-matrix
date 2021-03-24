@@ -1,1 +1,2 @@
   letsencrypt_email: lzs@zitseng.com
+  synapse_admin_dir: /srv/synapse-admin

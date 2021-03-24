@@ -118,7 +118,7 @@
 
     - name: Install synapse-admin dependencies
       yarn:
-        path: /srv/synapse-admin
+        path: {{ synapse_admin_dir }}
 
 
 # register_new_matrix_user -c /etc/matrix-synapse/homeserver.yaml -u admin -a http://localhost:8008
