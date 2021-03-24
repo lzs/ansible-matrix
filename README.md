@@ -1,10 +1,16 @@
 # Ansible Playbook for Installing Matrix-Synapse
 
-This is an Ansible playbook for installing Matrix-Synapse, along with Nginx, MySQL, as well as
+This is an Ansible playbook for installing Synapse (Matrix-Synapse), along with Nginx, MySQL, as well as
 ancillary tools and configuration.
 
 Matrix-Synapse is a reference implementation of Matrix (https://matrix.org/), an open network
-for secure, decentralised communication.
+for secure, decentralised communication. In order to support "larger scale" deployments where performance
+is a concern, Synapse is configured using
+[workers](https://github.com/matrix-org/synapse/blob/develop/docs/workers.md) whicih splits out functionality
+into multiple separate python processes. This allows workers to use mutiple processors, where the default
+monolithic mode is unable to exploit.
+
+PostgreSQL is used as the backig database.
 
 ## Setup
 
