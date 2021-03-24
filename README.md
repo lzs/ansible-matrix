@@ -30,7 +30,8 @@ ansible-playbook -i hosts.ini install_all.yml
 
 Go to the Matrix host, and run:
 
-```register_new_matrix_user -c /etc/matrix-synapse/homeserver.yaml -u admin -a http://localhost:8008
+```
+register_new_matrix_user -c /etc/matrix-synapse/homeserver.yaml -u admin -a http://localhost:8008
 ```
 
 to register your admin user.
