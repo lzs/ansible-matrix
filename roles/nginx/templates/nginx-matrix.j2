@@ -1,0 +1,63 @@
+server {
+    server_name {{ server_name }};
+
+    listen 443 ssl;
+    ssl_certificate /etc/letsencrypt/live/{{ server_name }}/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/{{ server_name }}/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+
+    proxy_set_header X-Forwarded-For $remote_addr;
+    # Nginx by default only allows file uploads up to 1M in size
+    # Increase client_max_body_size to match max_upload_size defined in homeserver.yaml
+    client_max_body_size 10M;
+
+    # generic_worker
+    {% for mapurl in generic_worker_url %}
+    location ~* {{ mapurl }} { proxy_pass http://localhost:8083; }
+    {% endfor %}
+
+    # media_repository
+    {% for mapurl in media_repository_url %}
+    location ~* {{ mapurl }} { proxy_pass http://localhost:8085; }
+    {% endfor %}
+
+    # user_dir
+    {% for mapurl in user_dir_url %}
+    location ~* {{ mapurl }} { proxy_pass http://localhost:8087; }
+    {% endfor %}
+
+    # frontend_proxy
+    {% for mapurl in frontend_proxy_url %}
+    location ~* {{ mapurl }} { proxy_pass http://localhost:8088; }
+    {% endfor %}
+
+    # Default to main process
+    location /_matrix {
+        proxy_pass http://localhost:8008;
+    }
+
+    location /_synapse/admin {
+        proxy_pass http://localhost:8008;
+    }
+
+    location /admin {
+        proxy_pass http://localhost:3000;
+    }
+}
+
+server {
+    server_name {{ server_name }};
+
+    listen 8448 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/{{ server_name }}/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/{{ server_name }}/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+
+    location /_matrix {
+        proxy_pass http://localhost:8008;
+        proxy_set_header X-Forwarded-For $remote_addr;
+    }
+}
+

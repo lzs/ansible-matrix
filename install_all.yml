@@ -1,0 +1,13 @@
+- name: Install Matrix
+  hosts: matrix
+  gather_facts: yes
+  strategy: free
+  become: yes
+  vars_files:
+    - vars/config.yml
+    - vars/nginx-urls.yml
+    - vars/vault.yml
+
+  roles:
+    - matrix
+    - nginx

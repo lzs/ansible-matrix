@@ -1,0 +1,47 @@
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install Nginx
+      apt:
+        pkg:
+          - nginx
+        state: latest
+        update_cache: yes
+
+    - name: Install certbot via snap
+      snap:
+        name: certbot
+        classic: yes
+
+    - name: Start nginx
+      systemd:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Letsencrypt check
+      stat:
+        path: /etc/letsencrypt/live/{{ server_name }}/fullchain.pem
+      register: fullchain_file
+    #- name: Install nginx reverse config
+
+    - name: Install Cert
+      command: certbot --nginx --key-type ecdsa --agree-tos --no-eff-email --redirect -n --email {{ letsencrypt_email }} -d {{ server_name }}
+      when: fullchain_file.stat.exists == false
+
+    - name: Replace Original Nginx Config
+      template:
+        src: nginx-default.j2
+        dest: /etc/nginx/sites-available/default
+
+    - name: Add reverse proxy config
+      template:
+        src: nginx-matrix.j2
+        dest: /etc/nginx/sites-enabled/matrix
+
+    - name: Restart nginx
+      systemd:
+        name: nginx
+        state: restarted

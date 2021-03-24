@@ -1,0 +1,63 @@
+- name: Install Postgresql
+  hosts: matrix
+  vars_files:
+    - vars/config.yml
+    - vars/nginx-urls.yml
+    - [ "vars/vault.yml", "vars/plain.ylm" ]
+
+  tasks:
+    - name: Install postgresql
+      become: yes
+      become_user: root
+      apt:
+        pkg:
+          - postgresql
+          - postgresql-contrib
+          - python3-psycopg2
+        update_cache: yes
+
+    - name: Start PostgreSQL server
+      become: yes
+      service:
+        name: postgresql
+        state: started
+
+#    - name: "Creating database user"
+#      expect:
+#        command: "sudo -u postgres createuser --pwprompt synapse_user"
+#        responses: 
+#          (?i)Enter: "{{ database_password }}"
+
+    - name: "Creating database user"
+      postgresql_user:
+        name: synapse_user
+        password: "{{ database_password }}"
+      vars:
+        ansible_become_user: postgres
+
+#    - name: "Creating database"
+#      become_user: postgres
+#      become: yes
+#      become_method: sudo
+#      command: "sudo -u postgres createdb --owner=synapse_user --encoding='UTF8' --locale='C' --template=template0 synapse"
+
+    - name: Creating database
+      postgresql_db:
+        name: synapse
+        encoding: UTF8
+        lc_collate: C
+        lc_ctype: C
+        template: template0
+        owner: synapse_user
+      vars:
+        ansible_become_user: postgres
+
+    - name: "Update pg_hba.conf"
+      blockinfile:
+        path: /etc/postgresql/12/main/pg_hba.conf
+        insertafter: EOF
+        marker_begin: "BEGIN synapse_user"
+        block: |
+          host synapse synapse_user 127.0.0.1/32 md5
+          host synapse synapse_user ::1/128 md5
+

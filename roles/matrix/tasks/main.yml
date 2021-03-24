@@ -1,0 +1,124 @@
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install Matrix repo key
+      apt_key:
+        id: AAF9AE843A7584B5A3E4CD2BCF45A512DE2DA058
+        url: https://packages.matrix.org/debian/matrix-org-archive-keyring.gpg
+
+    - name: Install Yarn repo key
+      apt_key:
+        id: 72ECF46A56B4AD39C907BBB71646B01B86E50310
+        url: https://dl.yarnpkg.com/debian/pubkey.gpg
+
+    - name: Add Matrix repo
+      copy:
+        dest: /etc/apt/sources.list.d/matrix-org.list
+        content: |
+          deb https://packages.matrix.org/debian/ focal main
+
+    - name: Add Yarn repo
+      copy:
+        dest: /etc/apt/sources.list.d/yarn.list
+        content: |
+          deb https://dl.yarnpkg.com/debian/ stable main
+
+    - name: Install Matrix and other dependencies
+      apt:
+        pkg:
+          - matrix-synapse-py3
+          - redis
+          - libolm-dev
+          - python3-psycopg2
+          - python3-pip
+          - python3-virtualenv
+          - python3-markdown
+          - python3-magic
+          - python3-dbus
+          - python3-notify2
+          - python3-urllib3
+          - python3-pil
+          - yarn
+        state: latest
+        update_cache: yes
+
+    - name: Generate registration shared secret
+      shell: cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1
+      register: register_shared_secret
+
+    - name: Generate matrix configuration
+      template:
+        src: homeserver.yaml.j2
+        dest: /etc/matrix-synapse/homeserver.yaml
+
+    - name: Configure matrix server name
+      copy:
+        dest: /etc/matrix-synapse/conf.d/server_name.yaml
+        content: |
+          server_name: {{ server_name }}
+
+    - name: Configure systemd configurations
+      copy:
+        src: files/{{ item }}
+        dest: /etc/systemd/system/
+      with_items:
+        - matrix-synapse.target
+        - matrix-synapse.service
+        - matrix-synapse-worker@.service
+
+    - name: Enable Matrix
+      systemd:
+          name: matrix-synapse.service
+          daemon_reload: yes
+          enabled: yes
+
+    - name: Copy Matrix Worker Configuration
+      copy:
+        src: files/{{ item }}
+        dest: /etc/matrix-synapse/workers/
+      with_items:
+        - worker_appservice.yaml
+        - worker_federation_sender.yaml
+        - worker_frontend_proxy.yaml
+        - worker_generic_worker.yaml
+        - worker_media_repository.yaml
+        - worker_pusher.yaml
+        - worker_user_dir.yaml
+        - workers_log_config.yaml
+
+    - name: Enable Matrix Workers
+      systemd:
+          name: matrix-synapse-worker@{{ item }}.service
+          enabled: yes
+      with_items:
+        - worker_appservice
+        - worker_federation_sender
+        - worker_frontend_proxy
+        - worker_generic_worker
+        - worker_media_repository
+        - worker_pusher
+        - worker_user_dir
+
+    - name: Enable and Start Matrix Target
+      systemd:
+          name: matrix-synapse.target
+          state: restarted
+          enabled: yes
+
+    - name: Install matrix-nio
+      pip:
+        name: matrix-nio[e2e]
+
+    - name: Git checkout synapse-admin
+      git:
+        repo: https://github.com/Awesome-Technologies/synapse-admin.git
+        dest: /srv/synapse-admin
+
+    - name: Install synapse-admin dependencies
+      yarn:
+        path: /srv/synapse-admin
+
+
+# register_new_matrix_user -c /etc/matrix-synapse/homeserver.yaml -u admin -a http://localhost:8008
