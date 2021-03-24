@@ -10,7 +10,7 @@ is a concern, Synapse is configured using
 into multiple separate python processes. This allows workers to use mutiple processors, where the default
 monolithic mode is unable to exploit.
 
-PostgreSQL is used as the backig database.
+PostgreSQL is used as the backing database.
 
 ## Setup
 
